@@ -1,6 +1,6 @@
 import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Guest, Question } from '../../models';
 import { DatabaseService } from '../../services/database';
 
@@ -17,7 +17,7 @@ type GameState =
 @Component({
   selector: 'app-trivia',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterLink],
   templateUrl: './trivia.html',
 })
 export class TriviaComponent implements OnInit {
@@ -171,5 +171,31 @@ export class TriviaComponent implements OnInit {
 
   goToHome() {
     this.router.navigate(['/']);
+  }
+
+  getOptionSymbol(index: number) {
+    switch (index) {
+      case 0:
+        return '▲';
+      case 1:
+        return '◆';
+      case 2:
+        return '●';
+      default:
+        return '■';
+    }
+  }
+
+  getOptionColorClass(index: number) {
+    switch (index) {
+      case 0:
+        return 'bg-red-950/40 border-red-600 hover:border-red-400';
+      case 1:
+        return 'bg-blue-950/40 border-blue-600 hover:border-blue-400';
+      case 2:
+        return 'bg-amber-950/40 border-amber-600 hover:border-amber-400';
+      default:
+        return 'bg-emerald-950/40 border-emerald-600 hover:border-emerald-400';
+    }
   }
 }

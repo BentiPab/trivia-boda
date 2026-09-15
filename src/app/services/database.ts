@@ -31,6 +31,19 @@ export class DatabaseService {
     return data;
   }
 
+  async getQuestionStats() {
+    const { data, error } = await this.database
+      .from('trivia_question_stats')
+      .select('*')
+      .order('order_index', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching stats:', error.message);
+      return [];
+    }
+    return data;
+  }
+
   // 2. Obtener preguntas ordenadas
   async getQuestions(): Promise<Question[]> {
     const { data, error } = await this.database
