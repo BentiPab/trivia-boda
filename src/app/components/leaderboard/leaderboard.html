@@ -1,0 +1,106 @@
+<div class="min-h-screen bg-slate-950 text-white p-4 sm:p-8 font-sans">
+  <div class="max-w-3xl mx-auto">
+
+    <!-- Pantalla de Bloqueo / PIN -->
+    @if (!isAuthenticated()) {
+      <div class="max-w-md mx-auto my-20 bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 text-center shadow-2xl">
+        <div class="text-4xl mb-3">🔒</div>
+        <h1 class="text-xl font-bold tracking-wide mb-1">Panel de Control - Boda</h1>
+        <p class="text-xs text-slate-400 mb-6">Ingresá el PIN maestro para ver las posiciones.</p>
+
+        <form (ngSubmit)="authenticate()" class="space-y-4">
+          <input
+            type="password"
+            [(ngModel)]="pin"
+            name="adminPin"
+            placeholder="PIN de acceso"
+            class="w-full text-center tracking-widest text-lg px-4 py-3 bg-slate-950 border border-slate-700 rounded-xl focus:outline-none focus:border-indigo-500 transition"
+          />
+
+          @if (errorMessage()) {
+            <p class="text-rose-400 text-xs font-semibold">{{ errorMessage() }}</p>
+          }
+
+          <button
+            type="submit"
+            [disabled]="isLoading() || !pin()"
+            class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 active:scale-[0.98] font-bold rounded-xl transition cursor-pointer">
+            {{ isLoading() ? 'Verificando...' : 'Entrar al Podio' }}
+          </button>
+        </form>
+      </div>
+    }
+
+    <!-- Vista de Resultados / Podio -->
+    @if (isAuthenticated()) {
+      <header class="flex items-center justify-between pb-6 mb-6 border-b border-slate-800">
+        <div>
+          <h1 class="text-2xl sm:text-3xl font-black text-slate-100 flex items-center gap-2">
+            <span>🏆</span> Podio en Vivo
+          </h1>
+          <p class="text-xs sm:text-sm text-slate-400 mt-1">
+            Total de participantes registrados: <strong>{{ leaderboard().length }}</strong>
+          </p>
+        </div>
+
+        <button
+          (click)="refresh()"
+          [disabled]="isLoading()"
+          class="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 active:scale-95 border border-slate-700 rounded-lg text-xs font-bold uppercase tracking-wider transition cursor-pointer">
+          <span [class.animate-spin]="isLoading()">🔄</span>
+          Actualizar
+        </button>
+      </header>
+
+      <!-- Tabla de Posiciones -->
+      <div class="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/70 shadow-2xl">
+        <table class="w-full text-left text-sm">
+          <thead class="bg-slate-800/90 text-slate-400 uppercase text-[11px] tracking-wider border-b border-slate-800">
+            <tr>
+              <th class="py-3.5 px-4 w-16 text-center">Pos</th>
+              <th class="py-3.5 px-4">Invitado</th>
+              <th class="py-3.5 px-4 text-right">Puntos</th>
+              <th class="py-3.5 px-4 text-right">Tiempo</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800/60">
+            @for (row of leaderboard(); track $index) {
+              <tr class="transition"
+                [ngClass]="{
+                  'bg-amber-500/10 font-bold': $index === 0,
+                  'bg-slate-400/5': $index === 1,
+                  'bg-amber-700/5': $index === 2,
+                  'hover:bg-slate-800/40': $index > 2
+                }">
+                <td class="py-3.5 px-4 text-center text-base">
+                  @switch ($index) {
+                    @case (0) { 🥇 }
+                    @case (1) { 🥈 }
+                    @case (2) { 🥉 }
+                    @default { <span class="text-xs font-semibold text-slate-500">{{ $index + 1 }}</span> }
+                  }
+                </td>
+                <td class="py-3.5 px-4 font-medium text-slate-200">
+                  {{ row.player_name }}
+                </td>
+                <td class="py-3.5 px-4 text-right font-black text-amber-400 text-base">
+                  {{ row.score }}
+                </td>
+                <td class="py-3.5 px-4 text-right text-xs text-slate-400 font-mono">
+                  {{ row.total_time_seconds }}s
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="4" class="py-8 text-center text-slate-500">
+                  Aún no hay invitados que hayan completado la trivia.
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+  </div>
+</div>

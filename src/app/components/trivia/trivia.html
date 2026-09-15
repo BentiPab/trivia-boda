@@ -1,0 +1,209 @@
+<div class="min-h-screen bg-slate-900 text-white flex flex-col justify-between p-4 sm:p-6 select-none font-sans">
+
+  <!-- HEADER -->
+  <header class="w-full max-w-xl mx-auto flex items-center justify-between py-2 border-b border-slate-800">
+    <div class="flex items-center gap-2">
+      <span class="text-xl">💍</span>
+      <span class="font-bold tracking-wide uppercase text-sm sm:text-base text-slate-300">Trivia Boda C&P</span>
+    </div>
+    @if (guest()) {
+      <div class="text-xs bg-slate-800 border border-slate-700 px-3 py-1 rounded-full text-slate-300 font-medium">
+        {{ guest()?.name }}
+      </div>
+    }
+  </header>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main class="w-full max-w-xl mx-auto my-auto py-6">
+
+    <!-- 1. Estado: Cargando o Enviando -->
+    @if (gameState() === 'loading' || gameState() === 'submitting') {
+      <div class="text-center py-12">
+        <div class="inline-block animate-spin rounded-full h-10 w-10 border-4 border-indigo-500 border-t-transparent"></div>
+        <p class="mt-4 text-slate-400 font-medium">
+          {{ gameState() === 'loading' ? 'Verificando invitación...' : 'Guardando respuestas...' }}
+        </p>
+      </div>
+    }
+
+    <!-- 2. Estado: Token Inválido -->
+    @if (gameState() === 'invalid_token') {
+      <div class="bg-slate-800/80 border border-rose-500/30 rounded-2xl p-6 text-center shadow-xl">
+        <div class="text-4xl mb-3">🚫</div>
+        <h2 class="text-xl font-bold text-rose-400">Invitación no encontrada</h2>
+        <p class="text-slate-400 text-sm mt-2">
+          El enlace o código QR no es válido. Asegurate de escanear el código que te asignamos en tu tarjeta.
+        </p>
+      </div>
+    }
+
+    <!-- 3. Estado: Ya Jugó Previamente -->
+    @if (gameState() === 'already_played') {
+      <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-8 text-center shadow-xl">
+        <div class="text-4xl mb-3">✅</div>
+        <h2 class="text-2xl font-bold">¡Ya participaste, {{ guest()?.name }}!</h2>
+        <p class="text-slate-300 text-sm mt-3 leading-relaxed">
+          Tus respuestas ya quedaron registradas. Más tarde en la fiesta anunciaremos quiénes fueron los ganadores de la noche. 🤫
+        </p>
+      </div>
+    }
+
+    @if (gameState() === 'next_question_loading') {
+  <div class="bg-slate-800/90 border border-slate-700 rounded-2xl p-8 text-center shadow-2xl animate-fade-in flex flex-col items-center justify-center min-h-[300px]">
+    <div class="relative flex items-center justify-center mb-5">
+      <div class="w-16 h-16 rounded-full border-4 border-indigo-500/20 border-t-indigo-500 animate-spin"></div>
+      <span class="absolute text-xl">⏳</span>
+    </div>
+    <h3 class="text-xl font-black tracking-wide text-white uppercase mb-1">
+      ¡Siguiente Pregunta!
+    </h3>
+    <p class="text-xs text-slate-400 font-medium">
+      Preparando las opciones...
+    </p>
+  </div>
+}
+
+    <!-- 4. Estado: Listo para Empezar -->
+@if (gameState() === 'ready') {
+  <div class="bg-slate-800/90 border border-slate-700 rounded-2xl p-6 sm:p-8 text-center shadow-2xl">
+    <span class="inline-block text-5xl mb-4">✨</span>
+    <h1 class="text-2xl sm:text-3xl font-black mb-2">¡Hola, {{ guest()?.name }}!</h1>
+
+    @if (isResuming()) {
+      <p class="text-amber-300 font-medium text-sm sm:text-base leading-relaxed mb-6">
+        Habías dejado la trivia en la <strong>pregunta {{ currentIndex() + 1 }} de {{ questions().length }}</strong>.
+        ¡Podés continuar justo donde te quedaste!
+      </p>
+    } @else {
+      <p class="text-slate-300 text-sm sm:text-base leading-relaxed mb-6">
+        ¿Cuánto conocés a los novios? Tenés <strong>un único intento</strong> para demostrarlo y subirte al podio.
+      </p>
+    }
+
+    <!-- Reglas rápidas -->
+    <div class="bg-slate-900/60 rounded-xl p-4 text-xs text-slate-300 mb-4 flex justify-around border border-slate-800">
+      <span>📝 {{ questions().length }} preguntas</span>
+      <span>🤫 Respuestas secretas</span>
+    </div>
+
+    <!-- Banner de Desempate por Velocidad -->
+    <div class="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 mb-6 flex items-center justify-center gap-2 text-xs sm:text-sm text-amber-300 font-semibold">
+      <span class="text-base">⚡</span>
+      <span>En caso de empate en puntos, ¡gana el que haya respondido más rápido!</span>
+    </div>
+    <div class="bg-sky-500/10 border border-sky-500/30 rounded-xl p-3 mb-6 flex items-center justify-center gap-2 text-xs sm:text-sm text-sky-300 font-medium">
+    <span class="text-base">💾</span>
+    <span>Podés cerrar la página y continuar cuando quieras; tu progreso queda guardado.</span>
+  </div>
+
+    <button
+      (click)="startGame()"
+      class="w-full py-4 bg-indigo-600 hover:bg-indigo-500 active:scale-[0.98] transition font-black text-lg tracking-wider rounded-xl shadow-lg shadow-indigo-600/30 uppercase cursor-pointer">
+      {{ isResuming() ? 'Continuar Trivia' : '¡Comenzar Trivia!' }}
+    </button>
+  </div>
+}
+
+    <!-- 5. Estado: Jugando -->
+    @if (gameState() === 'playing' && currentQuestion()) {
+      <div class="flex flex-col gap-4">
+        <!-- Progreso simple -->
+        <div class="flex items-center justify-between text-xs font-bold text-slate-400 uppercase tracking-wider">
+          <span>Pregunta {{ currentIndex() + 1 }} de {{ questions().length }}</span>
+        </div>
+        <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+          <div class="bg-indigo-500 h-full transition-all duration-300" [style.width.%]="progressPercent()"></div>
+        </div>
+
+        <!-- Tarjeta de Pregunta -->
+      <div class="bg-slate-800 border border-slate-700/80 rounded-2xl p-5 my-2 shadow-md flex flex-col items-center text-center">
+
+  <!-- Si la pregunta tiene imagen asignada -->
+  @if (currentQuestion().image_url) {
+    <div class="w-full max-h-56 sm:max-h-64 mb-4 overflow-hidden rounded-xl bg-slate-950 flex items-center justify-center border border-slate-700/50">
+      <img
+        [src]="currentQuestion().image_url"
+        [alt]="currentQuestion().question_text"
+        class="w-full h-full object-cover max-h-56 sm:max-h-64 transition duration-300"
+        loading="lazy"
+      />
+    </div>
+  }
+
+  <h2 class="text-lg sm:text-xl font-bold leading-snug">
+    {{ currentQuestion().question_text }}
+  </h2>
+</div>
+
+        <!-- Opciones -->
+      <!-- Opciones con Imagen Estilo Kahoot (2x2 Grid) -->
+<div class="grid grid-cols-2 gap-3 sm:gap-4 mt-3">
+  @for (option of currentQuestion().options; track $index) {
+    <button
+      (click)="selectOption($index)"
+      class="group relative flex flex-col items-center justify-between p-2 rounded-2xl border-2 transition overflow-hidden shadow-lg active:scale-[0.97] cursor-pointer text-white"
+      [ngClass]="{
+        'bg-red-950/40 border-red-600 hover:border-red-400': $index === 0,
+        'bg-blue-950/40 border-blue-600 hover:border-blue-400': $index === 1,
+        'bg-amber-950/40 border-amber-600 hover:border-amber-400': $index === 2,
+        'bg-emerald-950/40 border-emerald-600 hover:border-emerald-400': $index === 3,
+        'ring-4 ring-white scale-[0.98]': selectedOptionIndex() === $index
+      }">
+
+      <!-- Contenedor de la Imagen -->
+       @if (option.image_url) {
+      <div class="w-full aspect-square rounded-xl overflow-hidden bg-slate-950/80 mb-2 border border-slate-800 flex items-center justify-center">
+        <img
+          [src]="option.image_url"
+          [alt]="option.text || ('Opción ' + ($index + 1))"
+          class="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+          loading="lazy"
+        />
+      </div>
+    }
+
+      <!-- Barra inferior con ícono Kahoot y etiqueta -->
+      <div class="w-full py-1.5 px-2 rounded-lg flex items-center justify-between text-xs sm:text-sm font-bold"
+        [ngClass]="{
+          'bg-red-600': $index === 0,
+          'bg-blue-600': $index === 1,
+          'bg-amber-600': $index === 2,
+          'bg-emerald-600': $index === 3
+        }">
+        <span class="truncate">{{ option.text || ('Opción ' + ($index + 1)) }}</span>
+        <span class="opacity-80 text-[10px] ml-1">
+          @switch ($index) {
+            @case (0) { ▲ }
+            @case (1) { ◆ }
+            @case (2) { ● }
+            @case (3) { ■ }
+          }
+        </span>
+      </div>
+    </button>
+  }
+</div>
+      </div>
+    }
+
+    <!-- 6. Estado: Fin del Juego -->
+    @if (gameState() === 'gameover') {
+      <div class="bg-slate-800/90 border border-slate-700 rounded-2xl p-8 text-center shadow-2xl">
+        <div class="text-5xl mb-4">🥂</div>
+        <h2 class="text-2xl font-black mb-3">¡Respuestas Enviadas!</h2>
+        <p class="text-slate-300 text-sm sm:text-base leading-relaxed mb-4">
+          ¡Muchas gracias por participar, <strong>{{ guest()?.name }}</strong>!
+        </p>
+        <div class="bg-slate-900/70 border border-slate-700/60 rounded-xl p-4 text-xs sm:text-sm text-slate-400">
+          Los resultados finales y el podio de ganadores se anunciarán más tarde durante la fiesta. ¡A disfrutar de la noche!
+        </div>
+      </div>
+    }
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="w-full max-w-xl mx-auto text-center py-2 text-xs text-slate-500">
+    ¡Gracias por compartir esta noche con nosotros!
+  </footer>
+</div>
