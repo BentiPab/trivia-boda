@@ -1,6 +1,6 @@
 import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Guest, Question } from '../../models';
 import { DatabaseService } from '../../services/database';
 
@@ -22,6 +22,7 @@ type GameState =
 })
 export class TriviaComponent implements OnInit {
   private route = inject(ActivatedRoute);
+  private router = inject(Router);
   private database = inject(DatabaseService);
 
   gameState = signal<GameState>('loading');
@@ -44,12 +45,15 @@ export class TriviaComponent implements OnInit {
 
   async ngOnInit() {
     const token = this.route.snapshot.queryParamMap.get('t');
-    if (!token) {
-      this.gameState.set('invalid_token');
+
+    // Si entran a /trivia directo sin querystring t=, redireccionamos a /
+    if (!token || !token.trim()) {
+      this.router.navigate(['/']);
       return;
     }
 
     const guestData = await this.database.getGuestByToken(token.trim());
+
     if (!guestData) {
       this.gameState.set('invalid_token');
       return;
@@ -68,7 +72,6 @@ export class TriviaComponent implements OnInit {
     if (guestData.current_question_index > 0) {
       this.isResuming.set(true);
       this.currentIndex.set(guestData.current_question_index);
-
       this.previouslyAccumulatedTime = Number(guestData.accumulated_time_seconds) || 0;
     }
 
@@ -77,7 +80,6 @@ export class TriviaComponent implements OnInit {
 
   async startGame() {
     this.gameState.set('next_question_loading');
-    // Precargar la primera pregunta antes de arrancar
     await this.preloadQuestionImages(this.currentIndex());
     this.sessionStartTime = performance.now();
     this.gameState.set('playing');
@@ -96,20 +98,17 @@ export class TriviaComponent implements OnInit {
     const nextIndex = this.currentIndex() + 1;
     const guestId = this.guest()!.id;
 
-    // Mostramos el botón presionado 250ms antes de cambiar de vista
     setTimeout(async () => {
       this.selectedOptionIndex.set(null);
       this.isProcessingAnswer = false;
 
-      // 1. Ponemos la cortina de carga
       this.gameState.set('next_question_loading');
 
       const isLastQuestion = nextIndex >= this.questions().length;
 
-      // 2. Ejecutamos la validación RPC en Supabase y precargamos la siguiente en paralelo
       const tasks: Promise<any>[] = [
         this.database.submitAnswer(guestId, q.id, index, nextIndex, currentTotalTime),
-        new Promise((res) => setTimeout(res, 800)), // Pausa visual mínima
+        new Promise((res) => setTimeout(res, 800)),
       ];
 
       if (!isLastQuestion) {
@@ -118,7 +117,6 @@ export class TriviaComponent implements OnInit {
 
       await Promise.all(tasks);
 
-      // 3. Avanzar a la siguiente pregunta o finalizar
       if (!isLastQuestion) {
         this.currentIndex.set(nextIndex);
         this.gameState.set('playing');
@@ -128,7 +126,6 @@ export class TriviaComponent implements OnInit {
     }, 250);
   }
 
-  // Precarga de imágenes mediante promesas de Image()
   private preloadQuestionImages(index: number): Promise<void[]> {
     const nextQ = this.questions()[index];
     if (!nextQ) return Promise.resolve([]);
@@ -146,7 +143,7 @@ export class TriviaComponent implements OnInit {
         const img = new Image();
         img.src = url;
         img.onload = () => resolve();
-        img.onerror = () => resolve(); // Si falla alguna, no bloqueamos el juego
+        img.onerror = () => resolve();
       });
     });
 
@@ -158,7 +155,6 @@ export class TriviaComponent implements OnInit {
     const currentGuest = this.guest();
 
     if (currentGuest) {
-      // Obtenemos el registro fresco de la DB con el score total acumulado por el RPC
       const updatedGuest = await this.database.getGuestByToken(currentGuest.token);
       const finalScore = updatedGuest?.accumulated_score ?? 0;
 
@@ -171,5 +167,9 @@ export class TriviaComponent implements OnInit {
     }
 
     this.gameState.set('gameover');
+  }
+
+  goToHome() {
+    this.router.navigate(['/']);
   }
 }

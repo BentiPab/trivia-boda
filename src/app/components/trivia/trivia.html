@@ -26,16 +26,21 @@
       </div>
     }
 
-    <!-- 2. Estado: Token Inválido -->
-    @if (gameState() === 'invalid_token') {
-      <div class="bg-slate-800/80 border border-rose-500/30 rounded-2xl p-6 text-center shadow-xl">
-        <div class="text-4xl mb-3">🚫</div>
-        <h2 class="text-xl font-bold text-rose-400">Invitación no encontrada</h2>
-        <p class="text-slate-400 text-sm mt-2">
-          El enlace o código QR no es válido. Asegurate de escanear el código que te asignamos en tu tarjeta.
-        </p>
-      </div>
-    }
+
+@if (gameState() === 'invalid_token') {
+  <div class="bg-slate-800/90 border border-rose-500/30 rounded-2xl p-6 sm:p-8 text-center shadow-xl">
+    <div class="text-4xl mb-3">🚫</div>
+    <h2 class="text-xl font-bold text-rose-400 mb-2">Código o enlace no encontrado</h2>
+    <p class="text-slate-300 text-xs sm:text-sm mb-6 leading-relaxed">
+      El código proporcionado no corresponde a ningún invitado registrado.
+    </p>
+    <button
+      (click)="goToHome()"
+      class="px-6 py-3 bg-slate-700 hover:bg-slate-600 active:scale-95 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition cursor-pointer">
+      Volver a ingresar código
+    </button>
+  </div>
+}
 
     <!-- 3. Estado: Ya Jugó Previamente -->
     @if (gameState() === 'already_played') {
