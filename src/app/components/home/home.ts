@@ -18,6 +18,20 @@ export class HomeComponent {
   errorMessage = signal('');
   isLoading = signal(false);
 
+  // Control para mostrar el formulario del código al elegir Trivia
+  showTriviaCode = signal(false);
+
+  openTriviaForm() {
+    this.errorMessage.set('');
+    this.showTriviaCode.set(true);
+  }
+
+  cancelTrivia() {
+    this.showTriviaCode.set(false);
+    this.errorMessage.set('');
+    this.code.set('');
+  }
+
   async submitCode() {
     const rawCode = this.code().trim();
     if (!rawCode) {
@@ -36,7 +50,6 @@ export class HomeComponent {
         return;
       }
 
-      // Si es válido, lo mandamos a la trivia con su token en la query
       this.router.navigate(['/trivia'], {
         queryParams: { t: guest.token },
       });

@@ -1,0 +1,195 @@
+<div class="min-h-screen bg-slate-900 text-white flex flex-col justify-between p-4 sm:p-6 font-sans select-none">
+
+  <!-- Header -->
+  <header class="w-full max-w-xl mx-auto flex items-center justify-between py-3 border-b border-slate-800">
+    <a routerLink="/" class="text-xs font-bold text-slate-400 hover:text-white flex items-center gap-1.5 transition">
+      <span>←</span>
+      <span>Volver</span>
+    </a>
+    <div class="flex items-center gap-2">
+      <span class="text-xl">📸</span>
+      <span class="font-black tracking-widest uppercase text-sm sm:text-base text-slate-200">Álbum de Recuerdos</span>
+    </div>
+    <div class="w-12"></div>
+  </header>
+
+  <main class="w-full max-w-xl mx-auto my-4 space-y-6">
+
+    <!-- Tarjeta de Subida -->
+    <div class="bg-slate-800/90 border border-slate-700 rounded-3xl p-5 sm:p-6 text-center shadow-xl backdrop-blur-sm">
+      <h1 class="text-xl sm:text-2xl font-black mb-1.5 text-white">¡Compartí tus momentos!</h1>
+      <p class="text-slate-300 text-xs sm:text-sm leading-relaxed mb-5">
+        Subí fotos o videos desde tu galería o sacá una foto en el momento.
+      </p>
+
+      <label class="block cursor-pointer">
+        <input
+          type="file"
+          multiple
+          accept="image/*,video/*"
+          (change)="onFilesSelected($event)"
+          [disabled]="isUploading()"
+          class="hidden"
+        />
+        <div
+          class="w-full py-3.5 px-6 bg-indigo-600 hover:bg-indigo-500 active:scale-[0.98] disabled:opacity-50 font-black text-xs sm:text-sm uppercase tracking-wider rounded-2xl shadow-lg shadow-indigo-600/30 transition flex items-center justify-center gap-2">
+          @if (isUploading()) {
+            <div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+            <span>{{ progressMessage() }}</span>
+          } @else {
+            <span>📂 Seleccionar Fotos / Videos</span>
+          }
+        </div>
+      </label>
+
+      @if (successCount() > 0 && !isUploading()) {
+        <div class="mt-3 p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-300 text-xs font-semibold">
+          🎉 ¡Listo! Se subieron {{ successCount() }} archivo(s).
+        </div>
+      }
+
+      @if (errorMessage()) {
+        <div class="mt-3 p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-300 text-xs font-semibold">
+          {{ errorMessage() }}
+        </div>
+      }
+    </div>
+
+    <!-- Galería -->
+    <div class="space-y-3">
+      <div class="flex items-center justify-between px-1">
+        <div class="flex items-center gap-2">
+          <h2 class="text-sm font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+            <span>✨</span> Fotos de la fiesta
+          </h2>
+          @if (totalCount() > 0) {
+            <span class="text-[10px] bg-slate-800 text-slate-400 font-mono px-2 py-0.5 rounded-full border border-slate-700">
+              {{ galleryFiles().length }} de {{ totalCount() }}
+            </span>
+          }
+        </div>
+
+        <button
+          (click)="fetchGallery(true)"
+          [disabled]="isLoadingGallery() || isLoadingMore()"
+          class="text-xs text-indigo-400 hover:text-indigo-300 font-semibold flex items-center gap-1 cursor-pointer">
+          <span [class.animate-spin]="isLoadingGallery()">🔄</span>
+          <span>Refrescar</span>
+        </button>
+      </div>
+
+      @if (isLoadingGallery()) {
+        <div class="text-center py-10 text-slate-500 text-xs">Cargando fotos...</div>
+      } @else if (!galleryFiles().length) {
+        <div class="bg-slate-800/40 border border-slate-800 rounded-2xl p-6 text-center text-slate-400 text-xs">
+          Sé el primero en subir una foto 📸
+        </div>
+      } @else {
+        <!-- Grilla de Fotos -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+          @for (item of galleryFiles(); track item.id) {
+            <div
+              (click)="openViewer(item)"
+              class="aspect-square bg-slate-950 rounded-2xl overflow-hidden border border-slate-800 shadow-md group relative cursor-pointer active:scale-95 transition">
+
+              @if (item.mimeType.startsWith('video/')) {
+                <div class="w-full h-full flex flex-col items-center justify-center bg-slate-950 text-slate-400 p-2 text-center">
+                  <span class="text-3xl mb-1">🎥</span>
+                  <span class="text-[10px] font-mono truncate max-w-full px-1">Video</span>
+                </div>
+              } @else {
+                <img
+                  [src]="item.thumbnailUrl"
+                  [alt]="item.name"
+                  referrerpolicy="no-referrer"
+                  loading="lazy"
+                  class="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                  (error)="handleImageError($event)"
+                />
+              }
+
+              <!-- Overlay táctil -->
+              <div class="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white text-xs font-bold gap-1">
+                <span>🔍</span> <span>Ver</span>
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Botón Cargar Más -->
+        @if (hasMore()) {
+          <div class="pt-4 text-center">
+            <button
+              (click)="loadMore()"
+              [disabled]="isLoadingMore()"
+              class="w-full py-3 bg-slate-800 hover:bg-slate-700/80 border border-slate-700 rounded-2xl text-xs font-bold uppercase tracking-wider text-slate-300 hover:text-white transition flex items-center justify-center gap-2 active:scale-95 shadow">
+              @if (isLoadingMore()) {
+                <div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                <span>Cargando más fotos...</span>
+              } @else {
+                <span>Cargar más fotos</span>
+              }
+            </button>
+          </div>
+        }
+      }
+    </div>
+
+  </main>
+
+  <!-- MODAL / VISOR DE FOTO EN GRANDE (LIGHTBOX) -->
+  @if (selectedMedia(); as media) {
+    <div
+      class="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex flex-col justify-between p-4 animate-fade-in"
+      (click)="closeViewer()">
+
+      <!-- Barra superior del modal -->
+      <div class="w-full flex items-center justify-between z-10" (click)="$event.stopPropagation()">
+        <span class="text-xs text-slate-400 truncate max-w-[200px] font-mono">
+          {{ media.name }}
+        </span>
+        <button
+          (click)="closeViewer()"
+          class="w-9 h-9 rounded-full bg-slate-800/80 hover:bg-slate-700 text-white flex items-center justify-center text-lg font-bold transition active:scale-90">
+          ✕
+        </button>
+      </div>
+
+      <!-- Contenedor central (Imagen / Video) -->
+      <div class="flex-1 flex items-center justify-center my-2 max-h-[75vh]" (click)="$event.stopPropagation()">
+        @if (media.mimeType.startsWith('video/')) {
+          <div class="text-center p-6 bg-slate-900 border border-slate-800 rounded-3xl max-w-sm">
+            <div class="text-5xl mb-3">🎥</div>
+            <p class="text-sm font-bold text-slate-200 mb-1">Archivo de Video</p>
+            <p class="text-xs text-slate-400 mb-4">Los videos pueden verse o descargarse directamente en tu dispositivo.</p>
+          </div>
+        } @else {
+          <!-- Mostramos la imagen a mayor resolución (w1200) para verla nítida -->
+          <img
+            [src]="'https://drive.google.com/thumbnail?id=' + media.id + '&sz=w1200'"
+            [alt]="media.name"
+            referrerpolicy="no-referrer"
+            class="max-w-full max-h-full object-contain rounded-xl shadow-2xl"
+          />
+        }
+      </div>
+
+      <!-- Barra inferior con botón de Descargar -->
+      <div class="w-full max-w-sm mx-auto flex items-center justify-center gap-3 z-10" (click)="$event.stopPropagation()">
+        <a
+          [href]="media.downloadUrl"
+          target="_blank"
+          download
+          class="w-full py-3.5 px-6 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-bold text-xs uppercase tracking-wider rounded-2xl transition shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 text-center">
+          <span>⬇️</span>
+          <span>Descargar en calidad original</span>
+        </a>
+      </div>
+
+    </div>
+  }
+
+  <footer class="w-full max-w-xl mx-auto text-center py-3 text-xs text-slate-500">
+    ¡Gracias por compartir esta noche con nosotros!
+  </footer>
+</div>

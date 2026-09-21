@@ -4,10 +4,12 @@ import { TriviaComponent } from './components/trivia/trivia';
 import { HomeComponent } from './components/home/home';
 
 import { AdminComponent } from './components/admin/admin';
+import { MediaUploadComponent } from './components/media-upload/media-upload';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },
   { path: 'trivia', component: TriviaComponent },
   { path: 'admin', component: AdminComponent },
+  { path: 'fotos', component: MediaUploadComponent },
   { path: '**', redirectTo: '' },
 ];
